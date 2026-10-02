@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+}
+
+model Event {
+  id          Int       @id @default(autoincrement())
+  name        String
+  date        DateTime
+  time        String
+  location    String
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  seats       Seat[]
+  bookings    Booking[]
+}
+
+model Seat {
+  id           Int           @id @default(autoincrement())
+  eventId      Int
+  seatNumber   String
+  status       SeatStatus    @default(AVAILABLE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bookingSeats BookingSeat[]
+
+  @@unique([eventId, seatNumber])
+}
+
+model Booking {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  eventId      Int
+  status       BookingStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  cancelledAt  DateTime?
+  user         User          @relation(fields: [userId], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id])
+  bookingSeats BookingSeat[]
+}
+
+model BookingSeat {
+  id         Int     @id @default(autoincrement())
+  bookingId  Int
+  seatId     Int
+  seatNumber String
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seat       Seat    @relation(fields: [seatId], references: [id])
+
+  @@unique([bookingId, seatId])
+}
+
+enum SeatStatus {
+  AVAILABLE
+  BOOKED
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
